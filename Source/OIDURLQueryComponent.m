@@ -46,8 +46,17 @@ static NSString *const kQueryStringParamAdditionalDisallowedCharacters = @"=&+";
     if (@available(iOS 8.0, macOS 10.10, *)) {
       // If NSURLQueryItem is available, use it for deconstructing the new URL. (iOS 8+)
       if (!gOIDURLQueryComponentForceIOS7Handling) {
+        // The URL may need to be fixed before we can extract the components correctly.
+        NSURL *fixedURL = URL;
+        NSString *absoluteString = [URL absoluteString];
+        NSRange queryRange = [absoluteString rangeOfString:@"?"];
+        NSRange ampRange = [absoluteString rangeOfString:@"&"];
+        if (NSNotFound == queryRange.location && NSNotFound != ampRange.location) {
+            NSString *fixedAbsoluteString = [absoluteString stringByReplacingCharactersInRange:ampRange withString:@"?"];
+            fixedURL = [NSURL URLWithString: fixedAbsoluteString];
+        }
         NSURLComponents *components =
-            [NSURLComponents componentsWithURL:URL resolvingAgainstBaseURL:NO];
+            [NSURLComponents componentsWithURL:fixedURL resolvingAgainstBaseURL:NO];
         // As OAuth uses application/x-www-form-urlencoded encoding, interprets '+' as a space
         // in addition to regular percent decoding. https://url.spec.whatwg.org/#urlencoded-parsing
         components.percentEncodedQuery =
